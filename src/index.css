@@ -12,10 +12,33 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #101633 0%, #05060a 55%, #04040a 100%);
+  background: radial-gradient(
+    circle at top,
+    #101633 0%,
+    #05060a 55%,
+    #04040a 100%
+  );
   color: #f8fbff;
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* High-visibility focus indicators for accessibility */
+*:focus-visible {
+  outline: 3px solid #4dd0e1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

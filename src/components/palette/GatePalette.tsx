@@ -1,56 +1,138 @@
-import { memo } from 'react'
-import { useDraggable } from '@dnd-kit/core'
-import { Box, Chip, Stack, Tooltip, Typography } from '@mui/material'
-import { GATE_LIST } from '@/simulation/gates'
+import { memo } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { Box, Chip, Divider, Stack, Tooltip, Typography } from "@mui/material";
+import { GATE_LIST } from "@/simulation/gates";
 
 export function GatePalette() {
-    return (
-        <Box sx={{ p: 3, borderRadius: 3, bgcolor: 'rgba(7,11,24,0.85)', border: '1px solid rgba(128,152,231,0.25)' }}>
-            <Typography variant="subtitle2" sx={{ textTransform: 'uppercase', letterSpacing: 2, color: 'primary.light', mb: 1 }}>
-                Gate Palette
-            </Typography>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                {GATE_LIST.map((gate) => (
-                    <GateChip key={gate.name} gate={gate} />
-                ))}
-            </Stack>
+  const singleQubitGates = GATE_LIST.filter((gate) => gate.arity === 1);
+  const multiQubitGates = GATE_LIST.filter((gate) => gate.arity > 1);
+
+  return (
+    <Box
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        bgcolor: "rgba(7,11,24,0.85)",
+        border: "1px solid rgba(128,152,231,0.25)",
+      }}
+      role="region"
+      aria-label="Gate palette"
+    >
+      <Typography
+        variant="subtitle2"
+        sx={{
+          textTransform: "uppercase",
+          letterSpacing: 2,
+          color: "primary.light",
+          mb: 2,
+        }}
+      >
+        Gate Palette
+      </Typography>
+
+      <Stack spacing={2}>
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", mb: 1, display: "block" }}
+          >
+            Single-Qubit Gates
+          </Typography>
+          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+            {singleQubitGates.map((gate) => (
+              <GateChip key={gate.name} gate={gate} />
+            ))}
+          </Stack>
         </Box>
-    )
+
+        <Divider sx={{ opacity: 0.3 }} />
+
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", mb: 1, display: "block" }}
+          >
+            Multi-Qubit Gates
+          </Typography>
+          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+            {multiQubitGates.map((gate) => (
+              <GateChip key={gate.name} gate={gate} />
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
+    </Box>
+  );
 }
 
 const GateChip = memo(({ gate }: { gate: (typeof GATE_LIST)[number] }) => {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: `gate-${gate.name}`,
-        data: { gateName: gate.name, arity: gate.arity },
-    })
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: `gate-${gate.name}`,
+      data: { gateName: gate.name, arity: gate.arity },
+    });
 
-    return (
-        <Tooltip title={
-            <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{gate.description}</Typography>
-                <Typography variant="caption" component="div" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-                    {gate.tooltipLatex}
-                </Typography>
-            </Box>
-        }>
-            <Chip
-                ref={setNodeRef}
-                {...listeners}
-                {...attributes}
-                label={`${gate.label}${gate.arity > 1 ? ' (multi)' : ''}`}
+  const ariaLabel = `${gate.name} gate: ${gate.description}. ${gate.arity > 1 ? `Requires ${gate.arity} qubits.` : ""} Drag to place on circuit.`;
+
+  return (
+    <Tooltip
+      title={
+        <Box>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {gate.description}
+          </Typography>
+          <Typography
+            variant="caption"
+            component="div"
+            sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}
+          >
+            {gate.tooltipLatex}
+          </Typography>
+        </Box>
+      }
+    >
+      <Chip
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        label={
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <span>{gate.label}</span>
+            {gate.arity > 1 && (
+              <Typography
+                component="span"
                 sx={{
-                    bgcolor: gate.color,
-                    color: '#05060a',
-                    fontWeight: 600,
-                    cursor: 'grab',
-                    userSelect: 'none',
-                    boxShadow: isDragging ? '0 0 0 2px rgba(255,255,255,0.5)' : 'none',
-                    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : 'none',
-                    transition: 'box-shadow 150ms ease',
+                  fontSize: "0.7rem",
+                  opacity: 0.8,
+                  fontFamily: "IBM Plex Mono",
                 }}
-            />
-        </Tooltip>
-    )
-})
+              >
+                ×{gate.arity}
+              </Typography>
+            )}
+          </Stack>
+        }
+        aria-label={ariaLabel}
+        sx={{
+          bgcolor: gate.color,
+          color: "#05060a",
+          fontWeight: 600,
+          cursor: "grab",
+          userSelect: "none",
+          minHeight: 44,
+          px: gate.arity > 1 ? 2 : 1.5,
+          boxShadow: isDragging ? "0 0 0 2px rgba(255,255,255,0.5)" : "none",
+          transform: transform
+            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+            : "none",
+          transition: "box-shadow 150ms ease",
+          "&:active": {
+            cursor: "grabbing",
+          },
+        }}
+      />
+    </Tooltip>
+  );
+});
 
-GateChip.displayName = 'GateChip'
+GateChip.displayName = "GateChip";
