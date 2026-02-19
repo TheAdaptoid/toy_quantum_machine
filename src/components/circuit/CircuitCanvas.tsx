@@ -1,0 +1,294 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { Application, Graphics, Text } from 'pixi.js'
+import { Box, IconButton, Typography } from '@mui/material'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
+import type { GateInstance } from '@/types/quantum'
+import { GATE_LIBRARY } from '@/simulation/gates'
+
+const COLUMN_WIDTH = 120
+const ROW_HEIGHT = 72
+const CANVAS_PADDING = 36
+
+export interface CircuitCanvasProps {
+  numQubits: number
+  gates: GateInstance[]
+  currentStep: number
+  maxColumns: number
+  onRemoveGate?: (id: string) => void
+}
+
+export function CircuitCanvas({ numQubits, gates, currentStep, maxColumns, onRemoveGate }: CircuitCanvasProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const appRef = useRef<Application | null>(null)
+  const drawSceneRef = useRef<() => void>(() => {})
+  const orderedGates = useMemo(() => orderGates(gates), [gates])
+  const gateStepLookup = useMemo(() => createGateIndexMap(orderedGates), [orderedGates])
+
+  const drawScene = useCallback(() => {
+    const app = appRef.current
+    if (!app) {
+      return
+    }
+    const width = CANVAS_PADDING * 2 + maxColumns * COLUMN_WIDTH
+    const height = CANVAS_PADDING * 2 + numQubits * ROW_HEIGHT
+    app.stage.removeChildren()
+    app.renderer.resize(width, height)
+
+    const backdrop = new Graphics()
+    backdrop.roundRect(0, 0, width, height, 28).fill({ color: 0x070b18, alpha: 0.95 })
+    app.stage.addChild(backdrop)
+
+    const grid = new Graphics()
+    grid.lineStyle(1, 0x1a2749, 0.8)
+    for (let col = 0; col <= maxColumns; col += 1) {
+      const x = CANVAS_PADDING + col * COLUMN_WIDTH
+      grid.moveTo(x, CANVAS_PADDING)
+      grid.lineTo(x, height - CANVAS_PADDING)
+    }
+    for (let row = 0; row < numQubits; row += 1) {
+      const y = CANVAS_PADDING + ROW_HEIGHT / 2 + row * ROW_HEIGHT
+      grid.moveTo(CANVAS_PADDING, y)
+      grid.lineTo(width - CANVAS_PADDING, y)
+    }
+    app.stage.addChild(grid)
+
+    const stepLine = new Graphics()
+    const stepX = CANVAS_PADDING + currentStep * COLUMN_WIDTH
+    stepLine.lineStyle(3, 0x4dd0e1, 0.5)
+    stepLine.moveTo(stepX, CANVAS_PADDING)
+    stepLine.lineTo(stepX, height - CANVAS_PADDING)
+    app.stage.addChild(stepLine)
+
+    orderedGates.forEach((gate) => {
+      const stepIndex = gateStepLookup.get(gate.id) ?? -1
+      const executed = stepIndex <= currentStep
+      const definition = GATE_LIBRARY[gate.name]
+      const minTarget = Math.min(...gate.targets)
+      const maxTarget = Math.max(...gate.targets)
+      const span = maxTarget - minTarget + 1
+      const gateHeight = Math.max(48, span * ROW_HEIGHT - 16)
+      const gateWidth = COLUMN_WIDTH - 24
+      const centerX = CANVAS_PADDING + gate.column * COLUMN_WIDTH + COLUMN_WIDTH / 2
+      const top = CANVAS_PADDING + minTarget * ROW_HEIGHT + (ROW_HEIGHT - gateHeight) / 2
+
+      const rect = new Graphics()
+      rect.roundRect(centerX - gateWidth / 2, top, gateWidth, gateHeight, 14).fill({
+        color: hexToNumber(definition.color),
+        alpha: executed ? 0.55 : 0.85,
+      })
+      app.stage.addChild(rect)
+
+      const label = new Text({
+        text: gate.name,
+        style: {
+          fill: executed ? 0x0a0d18 : 0x051018,
+          fontSize: 18,
+          fontWeight: '700',
+          fontFamily: 'Space Grotesk',
+        },
+      })
+      label.x = centerX - label.width / 2
+      label.y = top + gateHeight / 2 - label.height / 2
+      app.stage.addChild(label)
+    })
+  }, [currentStep, gateStepLookup, maxColumns, numQubits, orderedGates])
+
+  useEffect(() => {
+    drawSceneRef.current = drawScene
+  }, [drawScene])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) {
+      return
+    }
+    const app = new Application()
+    let destroyed = false
+    app
+      .init({
+        backgroundAlpha: 0,
+        resizeTo: container,
+        antialias: true,
+      })
+      .then(() => {
+        if (destroyed) {
+          app.destroy(true)
+          return
+        }
+        container.appendChild(app.canvas)
+        appRef.current = app
+        drawSceneRef.current()
+      })
+    return () => {
+      destroyed = true
+      appRef.current = null
+      app.destroy(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    drawScene()
+  }, [drawScene])
+
+  const width = CANVAS_PADDING * 2 + maxColumns * COLUMN_WIDTH
+  const height = CANVAS_PADDING * 2 + numQubits * ROW_HEIGHT
+
+  return (
+    <Box sx={{ position: 'relative', overflowX: 'auto' }}>
+      <Box sx={{ position: 'relative', width, height }}>
+        <Box
+          ref={containerRef}
+          sx={{
+            width,
+            height,
+            borderRadius: 4,
+            border: '1px solid rgba(113,141,255,0.2)',
+            background: 'linear-gradient(120deg, rgba(9,13,26,0.95), rgba(3,5,12,0.95))',
+          }}
+        />
+        <DropGrid numQubits={numQubits} maxColumns={maxColumns} />
+        <GateOverlay
+          gates={orderedGates}
+          currentStep={currentStep}
+          onRemoveGate={onRemoveGate}
+        />
+      </Box>
+    </Box>
+  )
+}
+
+function DropGrid({ numQubits, maxColumns }: { numQubits: number; maxColumns: number }) {
+  const rows = Array.from({ length: numQubits }, (_, row) => row)
+  const columns = Array.from({ length: maxColumns }, (_, col) => col)
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        p: `${CANVAS_PADDING}px`,
+      }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'grid',
+          gridTemplateColumns: `repeat(${maxColumns}, ${COLUMN_WIDTH}px)`,
+          gridTemplateRows: `repeat(${numQubits}, ${ROW_HEIGHT}px)`,
+          gap: '0px',
+        }}
+      >
+        {rows.map((row) =>
+          columns.map((col) => <DropCell key={`${row}-${col}`} row={row} column={col} />),
+        )}
+      </Box>
+    </Box>
+  )
+}
+
+function DropCell({ row, column }: { row: number; column: number }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `cell-${row}-${column}`,
+    data: { column, qubit: row },
+  })
+  return (
+    <Box
+      ref={setNodeRef}
+      sx={{
+        pointerEvents: 'auto',
+        borderRadius: 2,
+        border: isOver ? '1px dashed rgba(77,208,225,0.8)' : '1px dashed transparent',
+        transition: 'border 100ms ease',
+      }}
+    />
+  )
+}
+
+function GateOverlay({
+  gates,
+  currentStep,
+  onRemoveGate,
+}: {
+  gates: GateInstance[]
+  currentStep: number
+  onRemoveGate?: (id: string) => void
+}) {
+  const gateSteps = useMemo(() => createGateIndexMap(gates), [gates])
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        p: `${CANVAS_PADDING}px`,
+      }}
+    >
+      {gates.map((gate) => {
+        const minTarget = Math.min(...gate.targets)
+        const maxTarget = Math.max(...gate.targets)
+        const span = maxTarget - minTarget + 1
+        const gateHeight = Math.max(48, span * ROW_HEIGHT - 16)
+        const gateWidth = COLUMN_WIDTH - 24
+        const x = gate.column * COLUMN_WIDTH + COLUMN_WIDTH / 2 - gateWidth / 2
+        const y = minTarget * ROW_HEIGHT + (ROW_HEIGHT - gateHeight) / 2
+        const executed = (gateSteps.get(gate.id) ?? -1) <= currentStep
+        return (
+          <Box
+            key={gate.id}
+            sx={{
+              position: 'absolute',
+              left: x,
+              top: y,
+              width: gateWidth,
+              height: gateHeight,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+            }}
+          >
+            {onRemoveGate && (
+              <IconButton
+                size="small"
+                onClick={() => onRemoveGate(gate.id)}
+                sx={{
+                  pointerEvents: 'auto',
+                  bgcolor: 'rgba(5,6,10,0.6)',
+                  color: executed ? 'text.secondary' : 'text.primary',
+                  '&:hover': { bgcolor: 'rgba(5,6,10,0.85)' },
+                }}
+              >
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        )
+      })}
+      <Typography
+        variant="caption"
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: 8,
+          letterSpacing: 4,
+          color: 'rgba(255,255,255,0.35)',
+        }}
+      >
+        drag gates into the grid
+      </Typography>
+    </Box>
+  )
+}
+
+function orderGates(gates: GateInstance[]) {
+  return [...gates].sort((a, b) => (a.column === b.column ? a.id.localeCompare(b.id) : a.column - b.column))
+}
+
+function createGateIndexMap(gates: GateInstance[]) {
+  const lookup = new Map<string, number>()
+  gates.forEach((gate, index) => lookup.set(gate.id, index + 1))
+  return lookup
+}
+
+function hexToNumber(color: string) {
+  return Number.parseInt(color.replace('#', ''), 16)
+}
