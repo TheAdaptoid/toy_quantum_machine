@@ -6,6 +6,7 @@ import App from "./App.tsx";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { appTheme } from "@/theme";
 import "./index.css";
+import "katex/dist/katex.min.css";
 import "@fontsource/space-grotesk/400.css";
 import "@fontsource/space-grotesk/600.css";
 import "@fontsource/ibm-plex-mono/400.css";

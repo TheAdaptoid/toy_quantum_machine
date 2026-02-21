@@ -1,6 +1,9 @@
 import { memo } from "react";
+import ReactMarkdown from "react-markdown";
 import { useDraggable } from "@dnd-kit/core";
 import { Box, Chip, Divider, Stack, Tooltip, Typography } from "@mui/material";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { GATE_LIST } from "@/simulation/gates";
 
 export function GatePalette() {
@@ -73,6 +76,7 @@ const GateChip = memo(({ gate }: { gate: (typeof GATE_LIST)[number] }) => {
     });
 
   const ariaLabel = `${gate.name} gate: ${gate.description}. ${gate.arity > 1 ? `Requires ${gate.arity} qubits.` : ""} Drag to place on circuit.`;
+  const latexMarkdown = `$$${gate.tooltipLatex}$$`;
 
   return (
     <Tooltip
@@ -81,13 +85,20 @@ const GateChip = memo(({ gate }: { gate: (typeof GATE_LIST)[number] }) => {
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {gate.description}
           </Typography>
-          <Typography
-            variant="caption"
-            component="div"
-            sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}
+          <Box
+            sx={{
+              mt: 0.5,
+              "& .katex": { fontSize: "0.85rem" },
+              "& .katex-display": { margin: 0 },
+            }}
           >
-            {gate.tooltipLatex}
-          </Typography>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {latexMarkdown}
+            </ReactMarkdown>
+          </Box>
         </Box>
       }
     >

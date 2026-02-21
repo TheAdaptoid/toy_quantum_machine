@@ -16,7 +16,9 @@ import type { SelectChangeEvent } from "@mui/material/Select";
 
 interface TopBarProps {
   numQubits: number;
+  initialState: number[];
   onQubitsChange: (value: number) => void;
+  onInitialStateChange: (state: number[]) => void;
   onReset: () => void;
   onSave: () => void;
   onLoadClick: () => void;
@@ -26,7 +28,9 @@ interface TopBarProps {
 
 export function TopBar({
   numQubits,
+  initialState,
   onQubitsChange,
+  onInitialStateChange,
   onReset,
   onSave,
   onLoadClick,
@@ -46,6 +50,12 @@ export function TopBar({
   const handleResetConfirm = () => {
     onReset();
     setResetDialogOpen(false);
+  };
+
+  const handleInitialToggle = (index: number) => {
+    const nextState = [...initialState];
+    nextState[index] = nextState[index] === 1 ? 0 : 1;
+    onInitialStateChange(nextState);
   };
 
   return (
@@ -93,6 +103,33 @@ export function TopBar({
                 </MenuItem>
               ))}
             </Select>
+          </Stack>
+          <Stack spacing={0.5}>
+            <Typography
+              variant="caption"
+              sx={{ textTransform: "uppercase", letterSpacing: 1 }}
+            >
+              Initial State
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {initialState.map((bit, idx) => (
+                <Button
+                  key={`init-${idx}`}
+                  size="small"
+                  variant={bit === 1 ? "contained" : "outlined"}
+                  color={bit === 1 ? "primary" : "inherit"}
+                  onClick={() => handleInitialToggle(idx)}
+                  aria-label={`Toggle initial state of qubit ${idx} to ${bit === 1 ? "0" : "1"}`}
+                  sx={{
+                    minHeight: 36,
+                    px: 1.5,
+                    fontFamily: '"IBM Plex Mono", monospace',
+                  }}
+                >
+                  q{idx}:{bit}
+                </Button>
+              ))}
+            </Stack>
           </Stack>
           <Button
             variant="outlined"

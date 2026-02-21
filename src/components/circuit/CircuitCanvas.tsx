@@ -175,7 +175,6 @@ export function CircuitCanvas({
     app
       .init({
         backgroundAlpha: 0,
-        resizeTo: container,
         antialias: true,
       })
       .then(() => {
@@ -189,7 +188,11 @@ export function CircuitCanvas({
       });
     return () => {
       destroyed = true;
-      appRef.current = null;
+      if (appRef.current) {
+        appRef.current.destroy(true);
+        appRef.current = null;
+        return;
+      }
       app.destroy(true);
     };
   }, []);

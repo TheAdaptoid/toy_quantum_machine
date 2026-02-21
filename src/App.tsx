@@ -47,14 +47,46 @@ type PendingPlacement = {
   primaryQubit: number;
 };
 
+function buildDefaultTargets(
+  gateName: GateName,
+  primaryQubit: number,
+  numQubits: number,
+) {
+  if (gateName !== "TOFFOLI") {
+    const neighbor =
+      primaryQubit + 1 < numQubits
+        ? primaryQubit + 1
+        : Math.max(0, primaryQubit - 1);
+    return [primaryQubit, neighbor];
+  }
+
+  const targets = [primaryQubit];
+  let offset = 1;
+  while (
+    targets.length < 3 &&
+    (primaryQubit + offset < numQubits || primaryQubit - offset >= 0)
+  ) {
+    if (primaryQubit + offset < numQubits) {
+      targets.push(primaryQubit + offset);
+    }
+    if (targets.length < 3 && primaryQubit - offset >= 0) {
+      targets.push(primaryQubit - offset);
+    }
+    offset += 1;
+  }
+  return targets;
+}
+
 function App() {
   const {
     numQubits,
+    initialState,
     gates,
     timeline,
     currentStep,
     measurement,
     setNumQubits,
+    setInitialState,
     addGate,
     removeGate,
     resetCircuit,
@@ -219,7 +251,9 @@ function App() {
       <Container maxWidth="xl">
         <TopBar
           numQubits={numQubits}
+          initialState={initialState}
           onQubitsChange={setNumQubits}
+          onInitialStateChange={setInitialState}
           onReset={resetCircuit}
           onSave={handleSave}
           onLoadClick={() => fileInputRef.current?.click()}
@@ -328,12 +362,11 @@ function App() {
           open
           gateName={pendingPlacement.gateName}
           numQubits={numQubits}
-          initialTargets={[
+          initialTargets={buildDefaultTargets(
+            pendingPlacement.gateName,
             pendingPlacement.primaryQubit,
-            pendingPlacement.primaryQubit + 1 < numQubits
-              ? pendingPlacement.primaryQubit + 1
-              : Math.max(0, pendingPlacement.primaryQubit - 1),
-          ]}
+            numQubits,
+          )}
           onConfirm={handlePlacementConfirm}
           onCancel={() => setPendingPlacement(null)}
         />
