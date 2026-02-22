@@ -1,93 +1,92 @@
 import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useDraggable } from "@dnd-kit/core";
-import { Box, Chip, Divider, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Tooltip, Typography } from "@mui/material";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { GATE_LIST } from "@/simulation/gates";
 
 export function GatePalette() {
-  const singleQubitGates = GATE_LIST.filter((gate) => gate.arity === 1);
-  const multiQubitGates = GATE_LIST.filter((gate) => gate.arity > 1);
-
   return (
     <Box
-      sx={{
-        p: 3,
-        borderRadius: 3,
-        bgcolor: "rgba(7,11,24,0.85)",
-        border: "1px solid rgba(128,152,231,0.25)",
-      }}
       role="region"
       aria-label="Gate palette"
+      sx={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: 2,
+        py: 1,
+        borderRadius: 3,
+        background: "rgba(8, 12, 24, 0.6)",
+        backdropFilter: "blur(16px) saturate(180%)",
+        border: "1px solid rgba(255, 255, 255, 0.06)",
+        overflowX: "auto",
+        overflowY: "hidden",
+        minWidth: 0,
+        // Custom scrollbar
+        "&::-webkit-scrollbar": {
+          height: 4,
+        },
+        "&::-webkit-scrollbar-track": {
+          background: "transparent",
+        },
+        "&::-webkit-scrollbar-thumb": {
+          background: "rgba(255, 255, 255, 0.1)",
+          borderRadius: 2,
+        },
+        "&::-webkit-scrollbar-thumb:hover": {
+          background: "rgba(255, 255, 255, 0.2)",
+        },
+      }}
     >
-      <Typography
-        variant="subtitle2"
+      {/* Single qubit gates */}
+      {GATE_LIST.filter((g) => g.arity === 1).map((gate) => (
+        <GateChip key={gate.name} gate={gate} />
+      ))}
+
+      {/* Divider */}
+      <Box
         sx={{
-          textTransform: "uppercase",
-          letterSpacing: 2,
-          color: "primary.light",
-          mb: 2,
+          width: 1,
+          height: 20,
+          mx: 0.5,
+          background: "rgba(255, 255, 255, 0.15)",
+          borderRadius: 1,
+          flexShrink: 1,
         }}
-      >
-        Gate Palette
-      </Typography>
+      />
 
-      <Stack spacing={2}>
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", mb: 1, display: "block" }}
-          >
-            Single-Qubit Gates
-          </Typography>
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
-            {singleQubitGates.map((gate) => (
-              <GateChip key={gate.name} gate={gate} />
-            ))}
-          </Stack>
-        </Box>
-
-        <Divider sx={{ opacity: 0.3 }} />
-
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", mb: 1, display: "block" }}
-          >
-            Multi-Qubit Gates
-          </Typography>
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
-            {multiQubitGates.map((gate) => (
-              <GateChip key={gate.name} gate={gate} />
-            ))}
-          </Stack>
-        </Box>
-      </Stack>
+      {/* Multi qubit gates */}
+      {GATE_LIST.filter((g) => g.arity > 1).map((gate) => (
+        <GateChip key={gate.name} gate={gate} />
+      ))}
     </Box>
   );
 }
 
 const GateChip = memo(({ gate }: { gate: (typeof GATE_LIST)[number] }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: `gate-${gate.name}`,
-      data: { gateName: gate.name, arity: gate.arity },
-    });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `gate-${gate.name}`,
+    data: { gateName: gate.name, arity: gate.arity },
+  });
 
   const ariaLabel = `${gate.name} gate: ${gate.description}. ${gate.arity > 1 ? `Requires ${gate.arity} qubits.` : ""} Drag to place on circuit.`;
   const latexMarkdown = `$$${gate.tooltipLatex}$$`;
+
+  // Generate a glow color from the gate color
+  const glowColor = gate.color + "60"; // 60 = ~37% opacity in hex
 
   return (
     <Tooltip
       title={
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
             {gate.description}
           </Typography>
           <Box
             sx={{
-              mt: 0.5,
               "& .katex": { fontSize: "0.85rem" },
               "& .katex-display": { margin: 0 },
             }}
@@ -102,46 +101,57 @@ const GateChip = memo(({ gate }: { gate: (typeof GATE_LIST)[number] }) => {
         </Box>
       }
     >
-      <Chip
+      <Box
         ref={setNodeRef}
         {...listeners}
         {...attributes}
-        label={
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <span>{gate.label}</span>
-            {gate.arity > 1 && (
-              <Typography
-                component="span"
-                sx={{
-                  fontSize: "0.7rem",
-                  opacity: 0.8,
-                  fontFamily: "IBM Plex Mono",
-                }}
-              >
-                ×{gate.arity}
-              </Typography>
-            )}
-          </Stack>
-        }
         aria-label={ariaLabel}
         sx={{
-          bgcolor: gate.color,
-          color: "#05060a",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 0.5,
+          px: 1.5,
+          py: 0.75,
+          borderRadius: 2.5,
           fontWeight: 600,
+          fontSize: "0.8rem",
+          fontFamily: '"Outfit", sans-serif',
           cursor: "grab",
           userSelect: "none",
-          minHeight: 44,
-          px: gate.arity > 1 ? 2 : 1.5,
-          boxShadow: isDragging ? "0 0 0 2px rgba(255,255,255,0.5)" : "none",
-          transform: transform
-            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-            : "none",
-          transition: "box-shadow 150ms ease",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          background: `linear-gradient(135deg, ${gate.color}20 0%, ${gate.color}10 100%)`,
+          border: `1px solid ${gate.color}40`,
+          color: gate.color,
+          boxShadow: "0 0 0 transparent",
+          opacity: isDragging ? 0.4 : 1,
+          transition:
+            "box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.15s ease",
+          "&:hover": {
+            background: `linear-gradient(135deg, ${gate.color}30 0%, ${gate.color}15 100%)`,
+            borderColor: `${gate.color}60`,
+            boxShadow: `0 0 20px ${glowColor}`,
+          },
           "&:active": {
             cursor: "grabbing",
           },
         }}
-      />
+      >
+        <span>{gate.label}</span>
+        {gate.arity > 1 && (
+          <Typography
+            component="span"
+            sx={{
+              fontSize: "0.6rem",
+              opacity: 0.7,
+              fontFamily: '"JetBrains Mono", monospace',
+            }}
+          >
+            ×{gate.arity}
+          </Typography>
+        )}
+      </Box>
     </Tooltip>
   );
 });

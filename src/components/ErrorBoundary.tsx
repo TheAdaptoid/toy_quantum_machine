@@ -1,12 +1,8 @@
 import { Component, type ReactNode } from "react";
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -67,42 +63,80 @@ export class ErrorBoundary extends Component<
           }}
         >
           <Container maxWidth="md">
-            <Paper
-              elevation={3}
+            <Box
               sx={{
                 p: 4,
-                borderRadius: 3,
-                border: "1px solid rgba(236,95,103,0.3)",
+                borderRadius: 4,
+                background: "rgba(12, 15, 30, 0.8)",
+                backdropFilter: "blur(24px) saturate(180%)",
+                WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                border: "1px solid rgba(247, 37, 133, 0.2)",
+                boxShadow: `
+                  0 24px 80px rgba(0, 0, 0, 0.5),
+                  0 0 60px rgba(247, 37, 133, 0.08),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.03)
+                `,
               }}
             >
               <Stack spacing={3}>
-                <Box>
-                  <Typography
-                    variant="h4"
-                    sx={{ fontWeight: 600, color: "error.main", mb: 1 }}
+                {/* Header */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 3,
+                      background:
+                        "linear-gradient(135deg, rgba(247, 37, 133, 0.2) 0%, rgba(123, 44, 191, 0.2) 100%)",
+                      border: "1px solid rgba(247, 37, 133, 0.3)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    Oops! Something went wrong
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: "text.secondary" }}>
-                    The quantum playground encountered an unexpected error.
-                    Don't worry—your browser's quantum state is still intact!
-                  </Typography>
+                    <ErrorOutlineRoundedIcon
+                      sx={{ fontSize: 28, color: "#f72585" }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        background:
+                          "linear-gradient(135deg, #ff8a80 0%, #f72585 100%)",
+                        backgroundClip: "text",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      Something went wrong
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      The quantum playground encountered an unexpected error
+                    </Typography>
+                  </Box>
                 </Box>
 
+                {/* Error message */}
                 {this.state.error && (
                   <Box
                     sx={{
                       p: 2,
                       borderRadius: 2,
-                      bgcolor: "rgba(236,95,103,0.08)",
-                      border: "1px solid rgba(236,95,103,0.2)",
+                      background: "rgba(247, 37, 133, 0.08)",
+                      border: "1px solid rgba(247, 37, 133, 0.15)",
                     }}
                   >
                     <Typography
                       variant="body2"
                       sx={{
-                        fontFamily: '"IBM Plex Mono", monospace',
-                        color: "error.light",
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: "0.8rem",
+                        color: "#ff8a80",
                         wordBreak: "break-word",
                       }}
                     >
@@ -111,26 +145,28 @@ export class ErrorBoundary extends Component<
                   </Box>
                 )}
 
+                {/* Stack trace */}
                 {this.state.errorInfo && (
                   <Box
                     sx={{
-                      maxHeight: 200,
+                      maxHeight: 180,
                       overflow: "auto",
                       p: 2,
                       borderRadius: 2,
-                      bgcolor: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                     }}
                   >
                     <Typography
                       variant="caption"
                       component="pre"
                       sx={{
-                        fontFamily: '"IBM Plex Mono", monospace',
+                        fontFamily: '"JetBrains Mono", monospace',
                         color: "text.secondary",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
-                        fontSize: "0.7rem",
+                        fontSize: "0.65rem",
+                        lineHeight: 1.6,
                       }}
                     >
                       {this.state.errorInfo}
@@ -138,12 +174,13 @@ export class ErrorBoundary extends Component<
                   </Box>
                 )}
 
+                {/* Actions */}
                 <Stack direction="row" spacing={2}>
                   <Button
                     variant="contained"
-                    color="primary"
                     onClick={this.handleReset}
-                    size="large"
+                    startIcon={<RefreshRoundedIcon />}
+                    sx={{ px: 3 }}
                   >
                     Reload Application
                   </Button>
@@ -156,20 +193,27 @@ export class ErrorBoundary extends Component<
                         errorInfo: null,
                       });
                     }}
+                    startIcon={<PlayArrowRoundedIcon />}
+                    sx={{ px: 3 }}
                   >
                     Try to Continue
                   </Button>
                 </Stack>
 
+                {/* Tip */}
                 <Typography
                   variant="caption"
-                  sx={{ color: "text.secondary", fontStyle: "italic" }}
+                  sx={{
+                    color: "text.secondary",
+                    opacity: 0.7,
+                    fontSize: "0.7rem",
+                  }}
                 >
-                  Tip: If this error persists, try clearing your browser's cache
-                  or loading a fresh circuit.
+                  Tip: If this persists, try clearing your browser cache or
+                  loading a fresh circuit
                 </Typography>
               </Stack>
-            </Paper>
+            </Box>
           </Container>
         </Box>
       );

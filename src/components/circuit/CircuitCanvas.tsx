@@ -6,11 +6,11 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import type { GateInstance } from "@/types/quantum";
 import { GATE_LIBRARY } from "@/simulation/gates";
 
-const COLUMN_WIDTH = 120;
-const ROW_HEIGHT = 72;
-const CANVAS_PADDING = 36;
-const LABEL_WIDTH = 48;
-const HEADER_HEIGHT = 32;
+const COLUMN_WIDTH = 100;
+const ROW_HEIGHT = 64;
+const CANVAS_PADDING = 32;
+const LABEL_WIDTH = 52;
+const HEADER_HEIGHT = 28;
 
 export interface CircuitCanvasProps {
   numQubits: number;
@@ -46,30 +46,35 @@ export function CircuitCanvas({
     app.stage.removeChildren();
     app.renderer.resize(width, height);
 
+    // Cosmic backdrop with subtle gradient
     const backdrop = new Graphics();
     backdrop
-      .roundRect(0, 0, width, height, 28)
-      .fill({ color: 0x070b18, alpha: 0.95 });
+      .roundRect(0, 0, width, height, 24)
+      .fill({ color: 0x060810, alpha: 0.85 });
     app.stage.addChild(backdrop);
 
-    // Draw qubit labels on the left
+    // Subtle inner glow border
+    const innerGlow = new Graphics();
+    innerGlow.lineStyle(1, 0x00f5d4, 0.08);
+    innerGlow.drawRoundedRect(1, 1, width - 2, height - 2, 24);
+    app.stage.addChild(innerGlow);
+
+    const gridLeft = CANVAS_PADDING + LABEL_WIDTH;
+    const gridTop = CANVAS_PADDING + HEADER_HEIGHT;
+
+    // Draw qubit labels on the left with soft styling
     for (let row = 0; row < numQubits; row += 1) {
       const label = new Text({
         text: `|q${row}⟩`,
         style: {
-          fill: 0x9ea9c4,
-          fontSize: 14,
+          fill: 0x8b9cc7,
+          fontSize: 13,
           fontWeight: "500",
-          fontFamily: "IBM Plex Mono",
+          fontFamily: "JetBrains Mono",
         },
       });
-      label.x = CANVAS_PADDING + 4;
-      label.y =
-        CANVAS_PADDING +
-        HEADER_HEIGHT +
-        row * ROW_HEIGHT +
-        ROW_HEIGHT / 2 -
-        label.height / 2;
+      label.x = CANVAS_PADDING + 2;
+      label.y = gridTop + row * ROW_HEIGHT + ROW_HEIGHT / 2 - label.height / 2;
       app.stage.addChild(label);
     }
 
@@ -78,45 +83,73 @@ export function CircuitCanvas({
       const colLabel = new Text({
         text: col.toString(),
         style: {
-          fill: 0x6880de,
-          fontSize: 12,
-          fontWeight: "600",
-          fontFamily: "Space Grotesk",
+          fill: 0x5a6a9a,
+          fontSize: 10,
+          fontWeight: "500",
+          fontFamily: "Outfit",
         },
       });
       colLabel.x =
-        CANVAS_PADDING +
-        LABEL_WIDTH +
-        col * COLUMN_WIDTH +
-        COLUMN_WIDTH / 2 -
-        colLabel.width / 2;
-      colLabel.y = CANVAS_PADDING + 8;
+        gridLeft + col * COLUMN_WIDTH + COLUMN_WIDTH / 2 - colLabel.width / 2;
+      colLabel.y = CANVAS_PADDING + 6;
       app.stage.addChild(colLabel);
     }
 
-    const grid = new Graphics();
-    grid.lineStyle(1, 0x1a2749, 0.8);
-    const gridLeft = CANVAS_PADDING + LABEL_WIDTH;
-    const gridTop = CANVAS_PADDING + HEADER_HEIGHT;
-    for (let col = 0; col <= maxColumns; col += 1) {
-      const x = gridLeft + col * COLUMN_WIDTH;
-      grid.moveTo(x, gridTop);
-      grid.lineTo(x, height - CANVAS_PADDING);
-    }
+    // Soft quantum wire lines (horizontal)
+    const wires = new Graphics();
     for (let row = 0; row < numQubits; row += 1) {
       const y = gridTop + ROW_HEIGHT / 2 + row * ROW_HEIGHT;
-      grid.moveTo(gridLeft, y);
-      grid.lineTo(width - CANVAS_PADDING, y);
+      // Gradient effect by drawing multiple lines with fading alpha
+      wires.lineStyle(2, 0x1e2a4a, 0.6);
+      wires.moveTo(gridLeft, y);
+      wires.lineTo(width - CANVAS_PADDING, y);
+      // Subtle glow line
+      wires.lineStyle(4, 0x00f5d4, 0.03);
+      wires.moveTo(gridLeft, y);
+      wires.lineTo(width - CANVAS_PADDING, y);
     }
-    app.stage.addChild(grid);
+    app.stage.addChild(wires);
 
+    // Subtle vertical column dividers
+    const dividers = new Graphics();
+    dividers.lineStyle(1, 0x1a2545, 0.3);
+    for (let col = 1; col < maxColumns; col += 1) {
+      const x = gridLeft + col * COLUMN_WIDTH;
+      dividers.moveTo(x, gridTop);
+      dividers.lineTo(x, height - CANVAS_PADDING);
+    }
+    app.stage.addChild(dividers);
+
+    // Animated step indicator - aurora gradient bar
+    const stepX = gridLeft + currentStep * COLUMN_WIDTH;
+
+    // Outer glow
+    const stepGlow = new Graphics();
+    stepGlow.lineStyle(8, 0x00f5d4, 0.1);
+    stepGlow.moveTo(stepX, gridTop - 4);
+    stepGlow.lineTo(stepX, height - CANVAS_PADDING + 4);
+    app.stage.addChild(stepGlow);
+
+    // Main indicator line with gradient simulation
     const stepLine = new Graphics();
-    const stepX = CANVAS_PADDING + LABEL_WIDTH + currentStep * COLUMN_WIDTH;
-    stepLine.lineStyle(3, 0x4dd0e1, 0.8);
-    stepLine.moveTo(stepX, gridTop);
-    stepLine.lineTo(stepX, height - CANVAS_PADDING);
+    const stepHeight = height - CANVAS_PADDING - gridTop + 8;
+    const segments = 20;
+    for (let i = 0; i < segments; i++) {
+      const t = i / segments;
+      const segY = gridTop - 4 + t * stepHeight;
+      const segHeight = stepHeight / segments;
+      // Interpolate between cyan and magenta
+      const r = Math.round(0x00 + t * (0xf7 - 0x00));
+      const g = Math.round(0xf5 + t * (0x25 - 0xf5));
+      const b = Math.round(0xd4 + t * (0x85 - 0xd4));
+      const color = (r << 16) + (g << 8) + b;
+      stepLine
+        .rect(stepX - 1.5, segY, 3, segHeight + 1)
+        .fill({ color, alpha: 0.9 });
+    }
     app.stage.addChild(stepLine);
 
+    // Draw gates with glass effect
     orderedGates.forEach((gate) => {
       const stepIndex = gateStepLookup.get(gate.id) ?? -1;
       const executed = stepIndex <= currentStep;
@@ -124,35 +157,55 @@ export function CircuitCanvas({
       const minTarget = Math.min(...gate.targets);
       const maxTarget = Math.max(...gate.targets);
       const span = maxTarget - minTarget + 1;
-      const gateHeight = Math.max(48, span * ROW_HEIGHT - 16);
-      const gateWidth = COLUMN_WIDTH - 24;
-      const centerX =
-        CANVAS_PADDING +
-        LABEL_WIDTH +
-        gate.column * COLUMN_WIDTH +
-        COLUMN_WIDTH / 2;
+      const gateHeight = Math.max(44, span * ROW_HEIGHT - 12);
+      const gateWidth = COLUMN_WIDTH - 20;
+      const centerX = gridLeft + gate.column * COLUMN_WIDTH + COLUMN_WIDTH / 2;
       const top =
-        CANVAS_PADDING +
-        HEADER_HEIGHT +
-        minTarget * ROW_HEIGHT +
-        (ROW_HEIGHT - gateHeight) / 2;
+        gridTop + minTarget * ROW_HEIGHT + (ROW_HEIGHT - gateHeight) / 2;
+      const gateColor = hexToNumber(definition.color);
 
+      // Outer glow for non-executed gates
+      if (!executed) {
+        const glow = new Graphics();
+        glow
+          .roundRect(
+            centerX - gateWidth / 2 - 4,
+            top - 4,
+            gateWidth + 8,
+            gateHeight + 8,
+            16,
+          )
+          .fill({ color: gateColor, alpha: 0.15 });
+        app.stage.addChild(glow);
+      }
+
+      // Gate background with glass effect
       const rect = new Graphics();
       rect
-        .roundRect(centerX - gateWidth / 2, top, gateWidth, gateHeight, 14)
+        .roundRect(centerX - gateWidth / 2, top, gateWidth, gateHeight, 12)
         .fill({
-          color: hexToNumber(definition.color),
-          alpha: executed ? 0.55 : 0.85,
+          color: executed ? 0x151a28 : gateColor,
+          alpha: executed ? 0.6 : 0.25,
         });
+      // Border
+      rect.lineStyle(1.5, gateColor, executed ? 0.3 : 0.6);
+      rect.drawRoundedRect(
+        centerX - gateWidth / 2,
+        top,
+        gateWidth,
+        gateHeight,
+        12,
+      );
       app.stage.addChild(rect);
 
+      // Gate label
       const label = new Text({
         text: gate.name,
         style: {
-          fill: executed ? 0x0a0d18 : 0x051018,
-          fontSize: 18,
-          fontWeight: "700",
-          fontFamily: "Space Grotesk",
+          fill: executed ? 0x6a7a9a : gateColor,
+          fontSize: 14,
+          fontWeight: "600",
+          fontFamily: "Outfit",
         },
       });
       label.x = centerX - label.width / 2;
@@ -205,17 +258,31 @@ export function CircuitCanvas({
   const height = CANVAS_PADDING * 2 + HEADER_HEIGHT + numQubits * ROW_HEIGHT;
 
   return (
-    <Box sx={{ position: "relative", overflowX: "auto" }}>
+    <Box
+      sx={{
+        position: "relative",
+        overflowX: "auto",
+        borderRadius: 4,
+        p: 0.5,
+        background: "rgba(8, 12, 24, 0.4)",
+        backdropFilter: "blur(16px) saturate(180%)",
+        WebkitBackdropFilter: "blur(16px) saturate(180%)",
+        border: "1px solid rgba(255, 255, 255, 0.05)",
+        boxShadow: `
+          0 8px 40px rgba(0, 0, 0, 0.4),
+          0 0 80px rgba(0, 245, 212, 0.03),
+          inset 0 1px 0 rgba(255, 255, 255, 0.02)
+        `,
+      }}
+    >
       <Box sx={{ position: "relative", width, height }}>
         <Box
           ref={containerRef}
           sx={{
             width,
             height,
-            borderRadius: 4,
-            border: "1px solid rgba(113,141,255,0.2)",
-            background:
-              "linear-gradient(120deg, rgba(9,13,26,0.95), rgba(3,5,12,0.95))",
+            borderRadius: 3,
+            overflow: "hidden",
           }}
         />
         <DropGrid numQubits={numQubits} maxColumns={maxColumns} />
@@ -286,12 +353,16 @@ const DropCell = memo(function DropCell({
         pointerEvents: "auto",
         borderRadius: 2,
         border: isOver
-          ? "2px solid rgba(77,208,225,0.9)"
+          ? "2px solid rgba(0, 245, 212, 0.8)"
           : "1px dashed transparent",
-        bgcolor: isOver ? "rgba(77,208,225,0.08)" : "transparent",
-        transition: "all 150ms ease",
+        bgcolor: isOver ? "rgba(0, 245, 212, 0.1)" : "transparent",
+        boxShadow: isOver
+          ? "0 0 20px rgba(0, 245, 212, 0.2), inset 0 0 20px rgba(0, 245, 212, 0.05)"
+          : "none",
+        transition: "all 200ms ease",
         "&:hover": {
-          border: "1px dashed rgba(77,208,225,0.4)",
+          border: "1px dashed rgba(0, 245, 212, 0.3)",
+          bgcolor: "rgba(0, 245, 212, 0.03)",
         },
       }}
     />
@@ -322,8 +393,8 @@ function GateOverlay({
         const minTarget = Math.min(...gate.targets);
         const maxTarget = Math.max(...gate.targets);
         const span = maxTarget - minTarget + 1;
-        const gateHeight = Math.max(48, span * ROW_HEIGHT - 16);
-        const gateWidth = COLUMN_WIDTH - 24;
+        const gateHeight = Math.max(44, span * ROW_HEIGHT - 12);
+        const gateWidth = COLUMN_WIDTH - 20;
         const x = gate.column * COLUMN_WIDTH + COLUMN_WIDTH / 2 - gateWidth / 2;
         const y = minTarget * ROW_HEIGHT + (ROW_HEIGHT - gateHeight) / 2;
         const executed = (gateSteps.get(gate.id) ?? -1) <= currentStep;
@@ -336,7 +407,6 @@ function GateOverlay({
             key={gate.id}
             title={`${gate.name} gate on ${targetsText}`}
             placement="top"
-            arrow
           >
             <Box
               sx={{
@@ -348,7 +418,7 @@ function GateOverlay({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
-                pr: 0.5,
+                pr: 0,
               }}
             >
               {onRemoveGate && (
@@ -358,32 +428,49 @@ function GateOverlay({
                   aria-label={`Remove ${gate.name} gate from column ${gate.column}`}
                   sx={{
                     pointerEvents: "auto",
-                    width: 44,
-                    height: 44,
-                    bgcolor: "rgba(5,6,10,0.6)",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: "rgba(8, 12, 24, 0.7)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
                     color: executed ? "text.secondary" : "text.primary",
-                    "&:hover": { bgcolor: "rgba(5,6,10,0.9)" },
+                    opacity: 0,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      background: "rgba(247, 37, 133, 0.3)",
+                      borderColor: "rgba(247, 37, 133, 0.5)",
+                    },
+                    ".MuiBox-root:hover &": {
+                      opacity: 1,
+                    },
                   }}
                 >
-                  <CloseRoundedIcon fontSize="small" />
+                  <CloseRoundedIcon sx={{ fontSize: 14 }} />
                 </IconButton>
               )}
             </Box>
           </Tooltip>
         );
       })}
-      <Typography
-        variant="caption"
-        sx={{
-          position: "absolute",
-          left: 16,
-          top: 8,
-          letterSpacing: 4,
-          color: "rgba(255,255,255,0.35)",
-        }}
-      >
-        drag gates into the grid
-      </Typography>
+      {gates.length === 0 && (
+        <Typography
+          variant="caption"
+          sx={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            letterSpacing: 2,
+            textTransform: "uppercase",
+            fontSize: "0.65rem",
+            color: "rgba(139, 156, 199, 0.4)",
+            pointerEvents: "none",
+          }}
+        >
+          Drag gates here
+        </Typography>
+      )}
     </Box>
   );
 }

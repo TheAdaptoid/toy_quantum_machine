@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -13,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { GateName } from "@/types/quantum";
+import { GATE_LIBRARY } from "@/simulation/gates";
 
 interface GateTargetDialogProps {
   open: boolean;
@@ -66,74 +68,166 @@ export function GateTargetDialog({
     }
   };
 
+  const gateColor = GATE_LIBRARY[gateName]?.color || "#00f5d4";
+
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>Configure {gateName}</DialogTitle>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          pb: 1,
+        }}
+      >
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: `linear-gradient(135deg, ${gateColor}30 0%, ${gateColor}10 100%)`,
+            border: `1px solid ${gateColor}50`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: gateColor,
+            fontWeight: 700,
+            fontSize: "0.9rem",
+          }}
+        >
+          {gateName}
+        </Box>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1rem" }}>
+            Configure Gate
+          </Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            Select target qubits for this operation
+          </Typography>
+        </Box>
+      </DialogTitle>
       <DialogContent>
-        <Typography variant="body2" sx={{ mb: 2 }}>
-          Select the qubits this gate spans. Qubit indices start at 0 (top wire)
-          and increase downward.
-        </Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <FormControl fullWidth>
-            <InputLabel>{labels[0]}</InputLabel>
-            <Select
-              label={labels[0]}
-              value={first}
-              onChange={(event) => setFirst(Number(event.target.value))}
-            >
-              {Array.from({ length: numQubits }, (_, idx) => (
-                <MenuItem key={`first-${idx}`} value={idx}>
-                  Qubit {idx}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>{labels[1]}</InputLabel>
-            <Select
-              label={labels[1]}
-              value={second}
-              onChange={(event) => setSecond(Number(event.target.value))}
-            >
-              {Array.from({ length: numQubits }, (_, idx) => (
-                <MenuItem key={`second-${idx}`} value={idx}>
-                  Qubit {idx}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {needsThird && (
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <FormControl fullWidth>
-              <InputLabel>{labels[2]}</InputLabel>
+              <InputLabel sx={{ fontSize: "0.85rem" }}>{labels[0]}</InputLabel>
               <Select
-                label={labels[2]}
-                value={third}
-                onChange={(event) => setThird(Number(event.target.value))}
+                label={labels[0]}
+                value={first}
+                onChange={(event) => setFirst(Number(event.target.value))}
+                size="small"
               >
                 {Array.from({ length: numQubits }, (_, idx) => (
-                  <MenuItem key={`third-${idx}`} value={idx}>
-                    Qubit {idx}
+                  <MenuItem key={`first-${idx}`} value={idx}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          bgcolor:
+                            idx === first ? "primary.main" : "transparent",
+                          border: "1px solid",
+                          borderColor:
+                            idx === first ? "primary.main" : "divider",
+                        }}
+                      />
+                      <span>q{idx}</span>
+                    </Stack>
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+            <FormControl fullWidth>
+              <InputLabel sx={{ fontSize: "0.85rem" }}>{labels[1]}</InputLabel>
+              <Select
+                label={labels[1]}
+                value={second}
+                onChange={(event) => setSecond(Number(event.target.value))}
+                size="small"
+              >
+                {Array.from({ length: numQubits }, (_, idx) => (
+                  <MenuItem key={`second-${idx}`} value={idx}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          bgcolor:
+                            idx === second ? "secondary.main" : "transparent",
+                          border: "1px solid",
+                          borderColor:
+                            idx === second ? "secondary.main" : "divider",
+                        }}
+                      />
+                      <span>q{idx}</span>
+                    </Stack>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {needsThird && (
+              <FormControl fullWidth>
+                <InputLabel sx={{ fontSize: "0.85rem" }}>
+                  {labels[2]}
+                </InputLabel>
+                <Select
+                  label={labels[2]}
+                  value={third}
+                  onChange={(event) => setThird(Number(event.target.value))}
+                  size="small"
+                >
+                  {Array.from({ length: numQubits }, (_, idx) => (
+                    <MenuItem key={`third-${idx}`} value={idx}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            bgcolor:
+                              idx === third ? "primary.light" : "transparent",
+                            border: "1px solid",
+                            borderColor:
+                              idx === third ? "primary.light" : "divider",
+                          }}
+                        />
+                        <span>q{idx}</span>
+                      </Stack>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Stack>
+          {duplicate && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                background: "rgba(247, 37, 133, 0.1)",
+                border: "1px solid rgba(247, 37, 133, 0.3)",
+              }}
+            >
+              <Typography variant="caption" color="error.light">
+                Each qubit must be unique. Please select different qubits.
+              </Typography>
+            </Box>
           )}
         </Stack>
-        {duplicate && (
-          <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-            Choose distinct qubits.
-          </Typography>
-        )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>Cancel</Button>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button onClick={onCancel} sx={{ px: 3 }}>
+          Cancel
+        </Button>
         <Button
           variant="contained"
           onClick={handleConfirm}
           disabled={duplicate}
+          sx={{ px: 3 }}
         >
-          Place gate
+          Place Gate
         </Button>
       </DialogActions>
     </Dialog>

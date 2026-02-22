@@ -1,5 +1,14 @@
 import { useEffect } from "react";
-import { Box, Button, Slider, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Slider,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
 
 interface StepControlsProps {
   currentStep: number;
@@ -42,73 +51,134 @@ export function StepControls({
   return (
     <Box
       sx={{
-        p: 3,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 2,
+        px: 2,
+        py: 1,
         borderRadius: 3,
-        bgcolor: "rgba(8,10,25,0.9)",
-        border: "1px solid rgba(118,141,234,0.25)",
+        background: "rgba(255, 255, 255, 0.03)",
+        border: "1px solid rgba(255, 255, 255, 0.06)",
       }}
       role="region"
       aria-label="Circuit execution controls"
     >
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={3}
-        alignItems="center"
-      >
-        <Stack direction="row" spacing={1}>
-          <Tooltip title="Previous step (← Left Arrow)">
-            <span>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={onStepBack}
-                disabled={currentStep === 0}
-                aria-label="Step backward"
-                sx={{ minHeight: 44 }}
-              >
-                Step back
-              </Button>
-            </span>
-          </Tooltip>
-          <Tooltip title="Next step (→ Right Arrow)">
-            <span>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={onStepForward}
-                disabled={currentStep >= totalSteps - 1}
-                aria-label="Step forward"
-                sx={{ minHeight: 44 }}
-              >
-                Step forward
-              </Button>
-            </span>
-          </Tooltip>
-        </Stack>
-        <Box sx={{ flexGrow: 1, width: "100%" }}>
-          <Typography
-            variant="caption"
-            sx={{ textTransform: "uppercase", letterSpacing: 2, mb: 0.5 }}
-          >
-            Execution step {currentStep} of {totalSteps - 1}
-          </Typography>
-          <Slider
-            size="medium"
-            value={currentStep}
-            min={0}
-            max={Math.max(0, totalSteps - 1)}
-            step={1}
-            onChange={(_, value) => onJump(value as number)}
+      {/* Step back button */}
+      <Tooltip title="Previous step (← Left Arrow)">
+        <span>
+          <IconButton
+            onClick={onStepBack}
+            disabled={currentStep === 0}
+            aria-label="Step backward"
+            size="small"
             sx={{
-              color: "primary.light",
-              "& .MuiSlider-track": { height: 6 },
-              "& .MuiSlider-rail": { height: 6 },
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              color: currentStep === 0 ? "text.secondary" : "text.primary",
+              transition: "all 0.2s ease",
+              "&:hover:not(:disabled)": {
+                background: "rgba(0, 245, 212, 0.1)",
+                borderColor: "rgba(0, 245, 212, 0.3)",
+                boxShadow: "0 0 12px rgba(0, 245, 212, 0.2)",
+              },
+              "&:disabled": {
+                opacity: 0.4,
+              },
             }}
-            valueLabelDisplay="auto"
-            aria-label="Jump to execution step"
-          />
-        </Box>
+          >
+            <SkipPreviousRoundedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
+
+      {/* Step indicator and slider */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.5}
+        sx={{ minWidth: 160 }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: "0.7rem",
+            color: "text.secondary",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              color: "primary.main",
+              fontWeight: 600,
+            }}
+          >
+            {currentStep}
+          </Box>
+          <Box component="span" sx={{ opacity: 0.5, mx: 0.5 }}>
+            /
+          </Box>
+          {totalSteps - 1}
+        </Typography>
+        <Slider
+          size="small"
+          value={currentStep}
+          min={0}
+          max={Math.max(0, totalSteps - 1)}
+          step={1}
+          onChange={(_, value) => onJump(value as number)}
+          sx={{
+            width: 100,
+            "& .MuiSlider-thumb": {
+              width: 14,
+              height: 14,
+            },
+          }}
+          valueLabelDisplay="auto"
+          aria-label="Jump to execution step"
+        />
       </Stack>
+
+      {/* Step forward button */}
+      <Tooltip title="Next step (→ Right Arrow)">
+        <span>
+          <IconButton
+            onClick={onStepForward}
+            disabled={currentStep >= totalSteps - 1}
+            aria-label="Step forward"
+            size="small"
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(135deg, rgba(0, 245, 212, 0.15) 0%, rgba(247, 37, 133, 0.1) 100%)",
+              border: "1px solid rgba(0, 245, 212, 0.2)",
+              color:
+                currentStep >= totalSteps - 1
+                  ? "text.secondary"
+                  : "primary.main",
+              transition: "all 0.2s ease",
+              "&:hover:not(:disabled)": {
+                background:
+                  "linear-gradient(135deg, rgba(0, 245, 212, 0.25) 0%, rgba(247, 37, 133, 0.15) 100%)",
+                borderColor: "rgba(0, 245, 212, 0.4)",
+                boxShadow: "0 0 16px rgba(0, 245, 212, 0.3)",
+              },
+              "&:disabled": {
+                opacity: 0.4,
+              },
+            }}
+          >
+            <SkipNextRoundedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
     </Box>
   );
 }

@@ -3,20 +3,24 @@ import type { ChangeEvent } from "react";
 import {
   Alert,
   Box,
-  Button,
-  Container,
+  Drawer,
+  IconButton,
   Snackbar,
-  Stack,
-  Typography,
+  Tooltip,
 } from "@mui/material";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { snapCenterToCursor } from "@dnd-kit/modifiers";
+import { GATE_LIST } from "@/simulation/gates";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import CloseIcon from "@mui/icons-material/Close";
 import { useCircuitStore } from "@/store/useCircuitStore";
 import { CircuitCanvas } from "@/components/circuit/CircuitCanvas";
 import { GatePalette } from "@/components/palette/GatePalette";
@@ -35,6 +39,8 @@ import {
   saveCircuitToStorage,
 } from "@/utils/persistence";
 import type { GateName } from "@/types/quantum";
+
+const DOCK_HEIGHT = 140;
 
 interface DropCellData {
   column: number;
@@ -104,6 +110,7 @@ function App() {
       activationConstraint: { delay: 200, tolerance: 8 },
     }),
   );
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [measurementOpen, setMeasurementOpen] = useState(false);
   const [pendingPlacement, setPendingPlacement] =
     useState<PendingPlacement | null>(null);
@@ -111,6 +118,7 @@ function App() {
     message: string;
     severity: "success" | "info" | "error";
   } | null>(null);
+  const [activeGate, setActiveGate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentState = timeline[currentStep]?.state;
@@ -138,7 +146,15 @@ function App() {
     }
   }, [loadCircuit]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const gateName = event.active?.data?.current?.gateName as
+      | string
+      | undefined;
+    setActiveGate(gateName ?? null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveGate(null);
     const gateName = event.active?.data?.current?.gateName as
       | string
       | undefined;
@@ -245,25 +261,61 @@ function App() {
   };
 
   const closeToast = () => setToast(null);
+  const activeGateData = activeGate
+    ? GATE_LIST.find((g) => g.name === activeGate)
+    : null;
 
   return (
-    <Box sx={{ py: { xs: 4, md: 6 }, px: 2 }}>
-      <Container maxWidth="xl">
-        <TopBar
-          numQubits={numQubits}
-          initialState={initialState}
-          onQubitsChange={setNumQubits}
-          onInitialStateChange={setInitialState}
-          onReset={resetCircuit}
-          onSave={handleSave}
-          onLoadClick={() => fileInputRef.current?.click()}
-          onShare={handleShare}
-          onRestore={handleLoadFromStorage}
-        />
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          pb: `${DOCK_HEIGHT}px`,
+        }}
+      >
+        {/* Main content area */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            p: { xs: 2, md: 3 },
+            overflow: "hidden",
+          }}
+        >
+          {/* Floating TopBar */}
+          <TopBar
+            numQubits={numQubits}
+            initialState={initialState}
+            onQubitsChange={setNumQubits}
+            onInitialStateChange={setInitialState}
+            onReset={resetCircuit}
+            onSave={handleSave}
+            onLoadClick={() => fileInputRef.current?.click()}
+            onShare={handleShare}
+            onRestore={handleLoadFromStorage}
+            onMeasure={() => setMeasurementOpen(true)}
+            measurement={measurement}
+          />
 
-        <Stack spacing={4} sx={{ mt: 4 }}>
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <GatePalette />
+          {/* Circuit Canvas - hero element */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 2,
+              minHeight: 0,
+            }}
+          >
             <CircuitCanvas
               numQubits={numQubits}
               gates={gates}
@@ -271,8 +323,65 @@ function App() {
               maxColumns={maxColumns}
               onRemoveGate={removeGate}
             />
-          </DndContext>
+          </Box>
+        </Box>
 
+        {/* Bottom Dock - Gates + Step Controls + Inspector Toggle */}
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: DOCK_HEIGHT,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+            px: { xs: 2, md: 3 },
+            py: 2,
+            background:
+              "linear-gradient(to top, rgba(3, 3, 8, 0.98) 0%, rgba(3, 3, 8, 0.9) 70%, transparent 100%)",
+            zIndex: 1100,
+          }}
+        >
+          {/* Gate Palette Row */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <GatePalette />
+
+            {/* Inspector Toggle Button */}
+            <Tooltip title="State Inspector">
+              <IconButton
+                onClick={() => setInspectorOpen(true)}
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 3,
+                  background: inspectorOpen
+                    ? "linear-gradient(135deg, rgba(0, 245, 212, 0.2), rgba(247, 37, 133, 0.2))"
+                    : "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  backdropFilter: "blur(12px)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, rgba(0, 245, 212, 0.15), rgba(247, 37, 133, 0.15))",
+                    borderColor: "rgba(0, 245, 212, 0.3)",
+                    boxShadow: "0 0 20px rgba(0, 245, 212, 0.2)",
+                  },
+                }}
+              >
+                <BarChartIcon sx={{ color: "#00f5d4" }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Step Controls Row */}
           <StepControls
             currentStep={currentStep}
             totalSteps={timeline.length}
@@ -280,104 +389,157 @@ function App() {
             onStepForward={stepForward}
             onJump={jumpToStep}
           />
+        </Box>
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
+        {/* State Inspector Drawer */}
+        <Drawer
+          anchor="bottom"
+          open={inspectorOpen}
+          onClose={() => setInspectorOpen(false)}
+          PaperProps={{
+            sx: {
+              height: "50vh",
+              maxHeight: 500,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              background: "rgba(8, 12, 24, 0.95)",
+              backdropFilter: "blur(24px) saturate(180%)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderBottom: "none",
+              boxShadow:
+                "0 -8px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(0, 245, 212, 0.05)",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              p: 3,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Box
               sx={{
-                flex: 1,
-                minWidth: 0,
-                p: 3,
-                borderRadius: 3,
-                border: "1px solid rgba(132,150,255,0.25)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
               }}
             >
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 2 }}
+              <Box
+                sx={{
+                  fontSize: "0.7rem",
+                  textTransform: "uppercase",
+                  letterSpacing: 3,
+                  color: "text.secondary",
+                }}
               >
-                <Box>
-                  <Typography variant="h6">Measurement</Typography>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Inspect probabilities then collapse the register.
-                  </Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  onClick={() => setMeasurementOpen(true)}
-                >
-                  Measure qubits
-                </Button>
-              </Stack>
-              {measurement ? (
-                <Box>
-                  <Typography variant="subtitle2">
-                    Outcome: {measurement.outcome}
-                  </Typography>
-                  {Object.entries(measurement.probabilities).map(
-                    ([label, probability]) => (
-                      <Typography variant="body2" key={label}>
-                        {label}: {(probability * 100).toFixed(2)}%
-                      </Typography>
-                    ),
-                  )}
-                </Box>
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  No measurements yet. Use the button above to sample.
-                </Typography>
-              )}
+                State Inspector
+              </Box>
+              <IconButton
+                onClick={() => setInspectorOpen(false)}
+                size="small"
+                sx={{ color: "text.secondary" }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
               <StateInspector amplitudes={amplitudes} />
             </Box>
-          </Stack>
-        </Stack>
-      </Container>
+          </Box>
+        </Drawer>
 
-      <input
-        type="file"
-        hidden
-        ref={fileInputRef}
-        accept="application/json"
-        onChange={handleFileSelect}
-      />
-
-      <MeasurementDialog
-        open={measurementOpen}
-        numQubits={numQubits}
-        onClose={() => setMeasurementOpen(false)}
-        onMeasure={(targets) => {
-          const result = handleMeasure(targets);
-          setMeasurementOpen(false);
-          return result;
-        }}
-        lastMeasurement={measurement}
-      />
-
-      {pendingPlacement && (
-        <GateTargetDialog
-          key={`${pendingPlacement.gateName}-${pendingPlacement.primaryQubit}-${pendingPlacement.column}`}
-          open
-          gateName={pendingPlacement.gateName}
-          numQubits={numQubits}
-          initialTargets={buildDefaultTargets(
-            pendingPlacement.gateName,
-            pendingPlacement.primaryQubit,
-            numQubits,
-          )}
-          onConfirm={handlePlacementConfirm}
-          onCancel={() => setPendingPlacement(null)}
+        <input
+          type="file"
+          hidden
+          ref={fileInputRef}
+          accept="application/json"
+          onChange={handleFileSelect}
         />
-      )}
 
-      {toast && (
-        <Snackbar open autoHideDuration={4000} onClose={closeToast}>
-          <Alert severity={toast.severity}>{toast.message}</Alert>
-        </Snackbar>
-      )}
-    </Box>
+        <MeasurementDialog
+          open={measurementOpen}
+          numQubits={numQubits}
+          onClose={() => setMeasurementOpen(false)}
+          onMeasure={(targets) => {
+            const result = handleMeasure(targets);
+            setMeasurementOpen(false);
+            return result;
+          }}
+          lastMeasurement={measurement}
+        />
+
+        {pendingPlacement && (
+          <GateTargetDialog
+            key={`${pendingPlacement.gateName}-${pendingPlacement.primaryQubit}-${pendingPlacement.column}`}
+            open
+            gateName={pendingPlacement.gateName}
+            numQubits={numQubits}
+            initialTargets={buildDefaultTargets(
+              pendingPlacement.gateName,
+              pendingPlacement.primaryQubit,
+              numQubits,
+            )}
+            onConfirm={handlePlacementConfirm}
+            onCancel={() => setPendingPlacement(null)}
+          />
+        )}
+
+        {toast && (
+          <Snackbar
+            open
+            autoHideDuration={4000}
+            onClose={closeToast}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert severity={toast.severity}>{toast.message}</Alert>
+          </Snackbar>
+        )}
+
+        {/* Drag overlay for cross-container dragging */}
+        <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
+          {activeGateData && (
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.75,
+                px: 2,
+                py: 1,
+                borderRadius: 3,
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                fontFamily: '"Outfit", sans-serif',
+                cursor: "grabbing",
+                userSelect: "none",
+                background: `linear-gradient(135deg, ${activeGateData.color}30 0%, ${activeGateData.color}15 100%)`,
+                border: `1px solid ${activeGateData.color}60`,
+                color: activeGateData.color,
+                boxShadow: `0 0 30px ${activeGateData.color}60, 0 8px 24px rgba(0, 0, 0, 0.4)`,
+                transform: "scale(1.1)",
+              }}
+            >
+              <span>{activeGateData.label}</span>
+              {activeGateData.arity > 1 && (
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: "0.65rem",
+                    opacity: 0.7,
+                    fontFamily: '"JetBrains Mono", monospace',
+                  }}
+                >
+                  ×{activeGateData.arity}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DragOverlay>
+      </Box>
+    </DndContext>
   );
 }
 
