@@ -1,8 +1,8 @@
-## Toy Quantum Machine
+# Toy Quantum Machine
 
 A browser-based quantum circuit playground with a matrix-oriented XZ-calculus engine and a cosmic, glassmorphism-inspired UI. Learners can drag Pauli / Clifford gates onto a circuit, step simulation forward and backward, and inspect the evolving state vector without leaving the browser.
 
-### Highlights
+## Highlights
 
 - **XZ-calculus simulation engine** implemented with typed arrays, supporting X, Z, H, S, T, CNOT, SWAP and TOFFOLI gates (up to 6 qubits).
 - **PixiJS circuit canvas** renders wires, qubit labels, column numbers, and gate blocks with drag-and-drop placement powered by `@dnd-kit/core`.
@@ -15,7 +15,7 @@ A browser-based quantum circuit playground with a matrix-oriented XZ-calculus en
 - **Persistence & sharing** – export/import JSON, quick-save to `localStorage`, and share circuits via URL query strings.
 - **Error boundary** – graceful error handling with fallback UI and recovery options.
 
-### Tech Stack
+## Tech Stack
 
 - Vite + React + TypeScript
 - Material UI 7 theme with Outfit / JetBrains Mono typography
@@ -23,7 +23,7 @@ A browser-based quantum circuit playground with a matrix-oriented XZ-calculus en
 - PixiJS renderer, Recharts for histograms, DnD Kit for drag interactions
 - Vitest + Testing Library for unit coverage
 
-### Getting Started
+## Getting Started
 
 ```bash
 npm install
@@ -32,7 +32,7 @@ npm run dev
 
 Visit `http://localhost:5173` and start dragging gates from the palette onto the circuit grid.
 
-### Key Scripts
+## Key Scripts
 
 | Command              | Description                                        |
 | -------------------- | -------------------------------------------------- |
@@ -42,9 +42,9 @@ Visit `http://localhost:5173` and start dragging gates from the palette onto the
 | `npm run test`       | Execute Vitest unit suite once                     |
 | `npm run test:watch` | Continuous Vitest watcher                          |
 
-### How to Use
+## How to Use
 
-#### 1. Single-qubit experiment (Hadamard on |0⟩)
+### 1. Single-qubit experiment (Hadamard on |0⟩)
 
 1. In the **bottom gate dock**, drag the **H** gate onto the first column of the top wire (q0).
 2. Use the **step controls** in the dock (slider or → arrow key) to advance to step 1.
@@ -53,7 +53,7 @@ Visit `http://localhost:5173` and start dragging gates from the palette onto the
 
 This demonstrates creating a superposition from |0⟩ using a single Hadamard gate.
 
-#### 2. Simple entanglement (Bell pair)
+### 2. Simple entanglement (Bell pair)
 
 1. Set the register to **2 qubits** using the qubit selector in the top bar.
 2. Drag **H** onto wire q0, column 0.
@@ -63,22 +63,22 @@ This demonstrates creating a superposition from |0⟩ using a single Hadamard ga
 
 This builds a standard Bell state using H followed by CNOT.
 
-#### 3. Saving, loading, and sharing
+### 3. Saving, loading, and sharing
 
 - Use **Save JSON** in the top bar to download the current circuit.
 - Use **Load JSON** to import a previously exported file.
 - Use **Share URL** to copy a permalink (`?circuit=...`) to your clipboard; anyone opening that URL will see the same circuit.
 - Use **Restore last** to pull the previous circuit snapshot from `localStorage`.
 
-### Features & Usability
+## Features & Usability
 
-#### Layout & Interaction Model
+### Layout & Interaction Model
 
 - **Cosmic canvas** – The main view is a PixiJS-powered circuit canvas framed by a deep-space background and aurora gradients.
 - **Bottom dock** – Gates, execution controls, and the inspector shortcut live in a fixed dock at the bottom of the screen so drag distances stay short and predictable.
 - **Responsive behavior** – The layout scales from small laptop screens to large monitors without hiding core controls.
 
-#### Circuit Canvas
+### Circuit Canvas
 
 - **Qubit labels** – Each wire displays its ket notation (|q0⟩, |q1⟩, …) on the left edge.
 - **Column numbers** – Reference circuit structure with numbered columns along the top.
@@ -86,39 +86,39 @@ This builds a standard Bell state using H followed by CNOT.
 - **Gate tooltips** – Hover over placed gates to see their type and target qubits.
 - **Touch-friendly delete** – 44px+ touch targets on gate removal buttons.
 
-#### Gate Palette (Bottom Dock)
+### Gate Palette (Bottom Dock)
 
 - **Horizontal gate chips** – Single-qubit gates appear first, followed by a subtle divider and multi-qubit gates.
 - **Arity badges** – Multi-qubit gates show an ×N badge (e.g., ×2 for CNOT) instead of verbose labels.
 - **Drag-and-drop** – Drag a gate from the dock onto any valid cell in the circuit canvas; multi-qubit gates open a target-selection dialog when needed.
 - **ARIA labels** – Each gate chip announces its behavior and arity to assistive technologies.
 
-#### Execution Controls
+### Execution Controls
 
 - **Keyboard shortcuts** – Press ← / → arrow keys to step backward/forward through the circuit.
 - **Step slider** – Jump directly to any step using the mini slider in the dock.
 - **Disabled state hints** – Tooltips explain why buttons are disabled at the start or end of the timeline.
 
-#### State Inspector
+### State Inspector
 
 - **Slide-up drawer** – Click the dock inspector button to open a bottom drawer with full state information.
 - **Zero filtering** – Toggle to hide basis states with negligible probability (≈ 0) for dense systems.
 - **Responsive chart height** – Bar chart height adapts to the number of qubits.
 - **Tabular detail** – Amplitudes and probabilities are listed in a monospace table with hover highlighting.
 
-#### Safety & Reliability
+### Safety & Reliability
 
 - **Reset confirmation** – Destructive actions require dialog confirmation
 - **Error boundary** – Application crashes show user-friendly recovery UI
 - **Validation feedback** – Toast notifications explain why gate placement might fail
 
-### Testing & Quality
+## Testing & Quality
 
 - Unit tests cover the quantum engine (gate application, measurement, normalization).
 - ESLint enforces modern TS/React rules, and Vitest uses `jsdom` for component testing hooks.
 - Accessibility features tested with keyboard-only navigation and screen reader compatibility.
 
-### Project Structure (selected)
+## Project Structure (selected)
 
 ```
 src/
@@ -130,13 +130,13 @@ src/
   theme/              # MUI theme definition
 ```
 
-### Sharing & Persistence
+## Sharing & Persistence
 
 - **Save JSON** downloads the full circuit definition, while **Load JSON** imports a previously exported file.
 - **Share URL** copies a permalink (`?circuit=...`) encoding the current qubit count and gate list so learners can bookmark or send their circuits.
 - **Restore last** pulls the latest snapshot from browser storage.
 
-### Accessibility
+## Accessibility
 
 This application follows WCAG 2.1 AA guidelines:
 
@@ -146,7 +146,7 @@ This application follows WCAG 2.1 AA guidelines:
 - Touch targets meet 44×44px minimum size
 - Respects `prefers-reduced-motion` user preference
 
-### Next Steps
+## Next Steps
 
 - Add controlled execution playback and animation speed controls.
 - Layer in Cypress integration tests and CI workflow.
