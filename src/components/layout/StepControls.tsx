@@ -65,7 +65,7 @@ export function StepControls({
       aria-label="Circuit execution controls"
     >
       {/* Step back button */}
-      <Tooltip title="Previous step (← Left Arrow)">
+      <Tooltip title="Previous Time Step">
         <span>
           <IconButton
             onClick={onStepBack}
@@ -145,7 +145,7 @@ export function StepControls({
       </Stack>
 
       {/* Step forward button */}
-      <Tooltip title="Next step (→ Right Arrow)">
+      <Tooltip title="Next Time Step">
         <span>
           <IconButton
             onClick={onStepForward}

@@ -69,12 +69,37 @@ export function buildTimeline(
   );
   const timeline: TimelineEntry[] = [];
   let workingState = createBasisState(numQubits, initialState);
-  timeline.push({ step: 0, state: cloneState(workingState) });
+  timeline.push({
+    step: 0,
+    gates: [],
+    column: -1,
+    state: cloneState(workingState),
+  });
 
-  orderedGates.forEach((gate, index) => {
+  // Group gates by column (occupied columns only)
+  const columnGroups = new Map<number, GateInstance[]>();
+  orderedGates.forEach((gate) => {
+    const group = columnGroups.get(gate.column);
+    if (group) {
+      group.push(gate);
+    } else {
+      columnGroups.set(gate.column, [gate]);
+    }
+  });
+
+  const sortedColumns = [...columnGroups.keys()].sort((a, b) => a - b);
+  sortedColumns.forEach((col, index) => {
+    const group = columnGroups.get(col)!;
     workingState = cloneState(workingState);
-    applyGateToState(workingState, gate.name, gate.targets, numQubits);
-    timeline.push({ step: index + 1, state: cloneState(workingState), gate });
+    group.forEach((gate) => {
+      applyGateToState(workingState, gate.name, gate.targets, numQubits);
+    });
+    timeline.push({
+      step: index + 1,
+      gates: group,
+      column: col,
+      state: cloneState(workingState),
+    });
   });
 
   return timeline;

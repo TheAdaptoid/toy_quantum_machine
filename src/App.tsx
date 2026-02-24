@@ -104,6 +104,20 @@ function App() {
     exportCircuit,
   } = useCircuitStore();
 
+  /* ── mouse-tracking parallax ── */
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+    const onMove = (e: MouseEvent) => {
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      document.documentElement.style.setProperty("--mouse-x", String(x));
+      document.documentElement.style.setProperty("--mouse-y", String(y));
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
@@ -291,23 +305,27 @@ function App() {
           }}
         >
           {/* Floating TopBar */}
-          <TopBar
-            numQubits={numQubits}
-            initialState={initialState}
-            onQubitsChange={setNumQubits}
-            onInitialStateChange={setInitialState}
-            onReset={resetCircuit}
-            onSave={handleSave}
-            onLoadClick={() => fileInputRef.current?.click()}
-            onShare={handleShare}
-            onRestore={handleLoadFromStorage}
-            onMeasure={() => setMeasurementOpen(true)}
-            measurement={measurement}
-          />
+          <Box className="reveal-stagger" sx={{ animationDelay: "0ms" }}>
+            <TopBar
+              numQubits={numQubits}
+              initialState={initialState}
+              onQubitsChange={setNumQubits}
+              onInitialStateChange={setInitialState}
+              onReset={resetCircuit}
+              onSave={handleSave}
+              onLoadClick={() => fileInputRef.current?.click()}
+              onShare={handleShare}
+              onRestore={handleLoadFromStorage}
+              onMeasure={() => setMeasurementOpen(true)}
+              measurement={measurement}
+            />
+          </Box>
 
           {/* Circuit Canvas - hero element */}
           <Box
+            className="reveal-stagger"
             sx={{
+              animationDelay: "80ms",
               flex: 1,
               display: "flex",
               alignItems: "center",
@@ -328,7 +346,9 @@ function App() {
 
         {/* Bottom Dock - Gates + Step Controls + Inspector Toggle */}
         <Box
+          className="reveal-stagger"
           sx={{
+            animationDelay: "160ms",
             position: "fixed",
             bottom: 0,
             left: 0,

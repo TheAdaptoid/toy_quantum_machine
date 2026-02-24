@@ -184,8 +184,10 @@ export const useCircuitStore = create<CircuitStore>()(
       const { nextState, result } = measureState(working, qubits, numQubits);
 
       set((draft) => {
-        const ordered = orderGates(draft.gates);
-        const futureGates = ordered.slice(draft.currentStep);
+        const currentColumn = draft.timeline[draft.currentStep]?.column ?? -1;
+        const futureGates = orderGates(draft.gates).filter(
+          (g) => g.column > currentColumn,
+        );
         const preserved = draft.timeline.slice(0, draft.currentStep);
         const baseEntry: TimelineEntry = {
           ...draft.timeline[draft.currentStep],
@@ -262,11 +264,28 @@ function rebuildFutureTimeline(
 ) {
   const entries: TimelineEntry[] = [];
   const working = cloneState(baseState);
-  gates.forEach((gate, idx) => {
-    applyGateToState(working, gate.name, gate.targets, numQubits);
+
+  // Group future gates by column
+  const columnGroups = new Map<number, GateInstance[]>();
+  gates.forEach((gate) => {
+    const group = columnGroups.get(gate.column);
+    if (group) {
+      group.push(gate);
+    } else {
+      columnGroups.set(gate.column, [gate]);
+    }
+  });
+
+  const sortedColumns = [...columnGroups.keys()].sort((a, b) => a - b);
+  sortedColumns.forEach((col, idx) => {
+    const group = columnGroups.get(col)!;
+    group.forEach((gate) => {
+      applyGateToState(working, gate.name, gate.targets, numQubits);
+    });
     entries.push({
       step: startingStep + idx + 1,
-      gate,
+      gates: group,
+      column: col,
       state: cloneState(working),
     });
   });

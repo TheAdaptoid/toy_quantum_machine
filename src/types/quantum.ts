@@ -53,6 +53,7 @@ export interface GateDefinition extends GateDescriptor {
 
 export interface TimelineEntry {
   step: number;
-  gate?: GateInstance;
+  gates: GateInstance[];
+  column: number;
   state: StateVector;
 }

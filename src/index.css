@@ -27,6 +27,10 @@
   --glow-cyan: 0 0 30px rgba(0, 245, 212, 0.3);
   --glow-magenta: 0 0 30px rgba(247, 37, 133, 0.3);
   --glow-soft: 0 0 60px rgba(0, 245, 212, 0.1);
+
+  /* Mouse-tracking parallax (set via JS) */
+  --mouse-x: 0.5;
+  --mouse-y: 0.5;
 }
 
 /* Cosmic deep space background */
@@ -55,11 +59,11 @@ body {
   overflow-x: hidden;
 }
 
-/* Animated aurora effect overlay */
+/* Animated aurora effect overlay — parallax-enabled */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -40px;
   pointer-events: none;
   background:
     radial-gradient(
@@ -73,29 +77,32 @@ body::before {
       transparent 40%
     );
   animation: auroraShift 30s ease-in-out infinite alternate;
+  transform: translate3d(
+    calc((var(--mouse-x) - 0.5) * 60px),
+    calc((var(--mouse-y) - 0.5) * 40px),
+    0
+  );
+  transition: transform 0.6s ease-out;
   z-index: 0;
 }
 
 @keyframes auroraShift {
   0% {
     opacity: 0.6;
-    transform: translateY(0) scale(1);
   }
   50% {
     opacity: 1;
-    transform: translateY(-2%) scale(1.02);
   }
   100% {
     opacity: 0.8;
-    transform: translateY(1%) scale(0.98);
   }
 }
 
-/* Subtle star particles */
+/* Subtle star particles — parallax at a different rate */
 body::after {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -20px;
   pointer-events: none;
   background-image:
     radial-gradient(
@@ -140,6 +147,12 @@ body::after {
     );
   background-size: 250px 250px;
   animation: twinkle 8s ease-in-out infinite;
+  transform: translate3d(
+    calc((var(--mouse-x) - 0.5) * -30px),
+    calc((var(--mouse-y) - 0.5) * -20px),
+    0
+  );
+  transition: transform 0.8s ease-out;
   z-index: 0;
 }
 
@@ -206,6 +219,22 @@ body::after {
   background: linear-gradient(180deg, var(--aurora-cyan), var(--aurora-violet));
 }
 
+/* Staggered reveal animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-stagger {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -219,6 +248,13 @@ body::after {
   body::before,
   body::after {
     animation: none;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .reveal-stagger {
+    animation: none;
+    opacity: 1;
   }
 }
 
